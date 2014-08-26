@@ -1,6 +1,5 @@
 package com.example.zoomimageview.ui;
 
-import java.util.Currency;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -10,8 +9,6 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup.MarginLayoutParams;
-import android.widget.Toast;
 
 public class ZoomImageView extends View {
 	private static final int STATUS_INIT=0;
@@ -20,7 +17,6 @@ public class ZoomImageView extends View {
 	private static final int STATUS_MOVE=3;
 	private int statusCurr=0;
 	private static Matrix matrix=new Matrix();
-	private static float lastX,lastY;
 	private float centerPointX,centerPointY;
 	private int width,height;
 	private float totalRatio;
@@ -37,6 +33,15 @@ public class ZoomImageView extends View {
 	private float movedDistanceX;
 	//y方向移动距离
     private float movedDistanceY; 
+    /**
+	 * 记录当前图片的宽度，图片被缩放时，这个值会一起变动
+	 */
+	private float currentBitmapWidth;
+
+	/**
+	 * 记录当前图片的高度，图片被缩放时，这个值会一起变动
+	 */
+	private float currentBitmapHeight;
     private float firstDistance,lastDistance;
 	private Bitmap bitmap;
 	private Context context;
@@ -48,7 +53,7 @@ public class ZoomImageView extends View {
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		switch (event.getActionMasked()) {
-		case MotionEvent.ACTION_DOWN:
+		case MotionEvent.ACTION_POINTER_DOWN:
 			if(event.getPointerCount()==2){
 				firstDistance=getDistance(event);
 			}
@@ -64,7 +69,16 @@ public class ZoomImageView extends View {
                 }  
                 movedDistanceX = xMove - lastXMove;  
                 movedDistanceY = yMove - lastYMove;
-                
+                if (totalTranslateX + movedDistanceX > 0) {
+					movedDistanceX = 0;
+				} else if (width - (totalTranslateX + movedDistanceX) > currentBitmapWidth) {
+					movedDistanceX = 0;
+				}
+				if (totalTranslateY + movedDistanceY > 0) {
+					movedDistanceY = 0;
+				} else if (height - (totalTranslateY + movedDistanceY) > currentBitmapHeight) {
+					movedDistanceY = 0;
+				}
                 
                 
                 invalidate();  
@@ -143,6 +157,8 @@ public class ZoomImageView extends View {
 	}
 	private void zoom(Canvas canvas) {
 		matrix.reset();
+		currentBitmapHeight=bitmap.getHeight()*totalRatio;
+		currentBitmapWidth=bitmap.getWidth()*totalRatio;
 		matrix.postScale(totalRatio, totalRatio);
 		canvas.drawBitmap(bitmap, matrix, null);
 	}
